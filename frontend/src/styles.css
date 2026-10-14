@@ -448,7 +448,10 @@ button.plan.selected { border-color: var(--ink); box-shadow: 0 0 0 1.5px var(--i
 /* ---------- Insights ---------- */
 .insight-top { display: flex; gap: 1rem; align-items: stretch; margin: 2rem 0; flex-wrap: wrap; }
 .insight-top .stat { min-width: 200px; }
-.insight-top .btn { align-self: center; }
+.live { align-self: center; display: flex; align-items: center; gap: 0.55rem; font-size: 0.92rem; color: var(--ink); }
+.live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--sage-deep); animation: pulse 1.8s ease-in-out infinite; }
+.live-dot.off { background: #c4806f; animation: none; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(127, 138, 98, 0.55); } 50% { box-shadow: 0 0 0 7px rgba(127, 138, 98, 0); } }
 .top-list { padding: 0.5rem 1.4rem 0.5rem 2.6rem; margin: 0 0 2rem; }
 .top-list li { padding: 0.65rem 0; border-bottom: 1px solid var(--line); }
 .top-list li:last-child { border-bottom: 0; }

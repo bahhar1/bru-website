@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api.js";
 import { SWATCHES, OUTLINE } from "../theme.js";
@@ -6,18 +6,46 @@ import { SWATCHES, OUTLINE } from "../theme.js";
 // Slide 10, "Data on every order": live popularity from real subscriptions.
 const FIELD_TITLES = { base: "Base", milk: "Milk", sweetness: "Sweetness", flavor: "Flavor" };
 
+const REFRESH_MS = 5000; // how often the page checks for new orders
+
 export default function Insights() {
   const [stats, setStats] = useState(null);
   const [err, setErr] = useState("");
+  const [updated, setUpdated] = useState(null);
+  const [, tick] = useState(0);
 
-  const load = () =>
-    api.stats().then(setStats).catch((e) => setErr(e.message));
+  const load = useCallback(
+    () =>
+      api
+        .stats()
+        .then((s) => {
+          setStats(s);
+          setErr("");
+          setUpdated(Date.now());
+        })
+        .catch((e) => setErr(e.message)),
+    []
+  );
 
+  // Load now, then every few seconds. Pauses while the tab is hidden.
   useEffect(() => {
     load();
-  }, []);
+    const poll = setInterval(() => {
+      if (!document.hidden) load();
+    }, REFRESH_MS);
+    const clock = setInterval(() => tick((n) => n + 1), 1000);
+    const onVisible = () => !document.hidden && load();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(poll);
+      clearInterval(clock);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [load]);
 
-  if (err) return <section className="page narrow"><p className="form-error">{err}</p></section>;
+  const ago = updated ? Math.max(0, Math.round((Date.now() - updated) / 1000)) : null;
+
+  if (err && !stats) return <section className="page narrow"><p className="form-error">{err}</p></section>;
   if (!stats) return <section className="page narrow"><p className="muted">Loading…</p></section>;
 
   const empty = stats.cans_per_cycle === 0;
@@ -40,7 +68,14 @@ export default function Insights() {
           <span className="stat-num">{stats.cans_per_cycle}</span>
           <span className="stat-label">cans per delivery cycle</span>
         </div>
-        <button className="btn ghost" onClick={load}>Refresh</button>
+        <div className="live">
+          <span className={`live-dot ${err ? "off" : ""}`} aria-hidden="true" />
+          <span>
+            {err ? "Reconnecting…" : "Live"}
+            <span className="muted"> · updated {ago === 0 ? "just now" : `${ago}s ago`}</span>
+          </span>
+          <button className="link-btn" onClick={load}>Refresh now</button>
+        </div>
       </div>
 
       {empty ? (
